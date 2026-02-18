@@ -2,6 +2,15 @@
 
 This repository contains a collection of microservices built with .NET 10 and PostgreSQL.
 
+## Technology Stack
+
+- **Framework:** .NET 10 (C#)
+- **Database:** PostgreSQL
+- **ORM:** Dapper
+- **Authentication:** JWT (System.IdentityModel.Tokens.Jwt)
+- **Testing:** xUnit, Moq, FluentAssertions
+- **API Documentation:** Swagger/OpenAPI
+
 ## Microservices Overview
 
 ### 1. **AuthService** (Port 5003)
@@ -11,10 +20,6 @@ Handles all authentication and authorization operations.
 - `POST /auth/register` - Register a new user
 - `POST /auth/login` - Login and receive JWT token
 - `GET /auth/refreshtoken` - Refresh authentication token
-
-**Tech Stack:** ASP.NET Core 10, PostgreSQL, JWT, Dapper
-
-[AuthService README](./AuthService/README.md)
 
 ### 2. **UserService** (Port 5001)
 Manages user profile information and user-related operations.
@@ -26,10 +31,6 @@ Manages user profile information and user-related operations.
 - `DELETE /user/deleteuser/{userId}` - Delete user
 - `POST /user/adduser` - Add new user
 
-**Tech Stack:** ASP.NET Core 10, PostgreSQL, Dapper
-
-[UserService README](./UserService/README.md)
-
 ### 3. **PostService** (Port 5000)
 Manages user posts and content.
 
@@ -40,9 +41,19 @@ Manages user posts and content.
 - `PUT /post/post` - Update post
 - `DELETE /post/post/{postId}` - Delete post
 
-**Tech Stack:** ASP.NET Core 10, PostgreSQL, Dapper
+#### Test Framework & Tools
+- **xUnit:** Testing framework
+- **Moq:** Mocking library for dependencies
+- **FluentAssertions:** Fluent assertion syntax
+- **In-Memory Configuration:** Mock IConfiguration for tests
 
-[PostService README](./PostService/README.md)
+### Tests
+
+All services include comprehensive unit tests:
+
+AuthService.Tests
+UserService.Tests
+PostService.Tests
 
 ## Project Structure
 
@@ -51,23 +62,35 @@ Microservices/
 ├── AuthService/              # Authentication microservice
 │   ├── Controllers/
 │   ├── Data/
+│   │   ├── DataContextDapper.cs
+│   │   └── IDataContextDapper.cs
 │   ├── Dtos/
 │   ├── Properties/
 │   ├── Program.cs
 │   ├── appsettings.json
 │   └── README.md
+├── AuthService.Tests/        # Unit tests for AuthService
+│   ├── AuthControllerTests.cs
+│   └── AuthService.Tests.csproj
 ├── UserService/              # User management microservice
 │   ├── Controllers/
 │   ├── Data/
+│   │   ├── DataContextDapper.cs
+│   │   └── IDataContextDapper.cs
 │   ├── Dtos/
 │   ├── Models/
 │   ├── Properties/
 │   ├── Program.cs
 │   ├── appsettings.json
 │   └── README.md
+├── UserService.Tests/        # Unit tests for UserService
+│   ├── UserControllerTest.cs
+│   └── UserService.Tests.csproj
 ├── PostService/              # Post management microservice
 │   ├── Controllers/
 │   ├── Data/
+│   │   ├── DataContextDapper.cs
+│   │   └── IDataContextDapper.cs
 │   ├── Dtos/
 │   ├── Models/
 │   ├── Properties/
@@ -76,11 +99,10 @@ Microservices/
 │   ├── TablePrep.sql
 │   └── README.md
 ├── PostService.Tests/        # Unit tests for PostService
-│   ├── Controllers/
-│   ├── Models/
-│   ├── Data/
-│   ├── Integration/
+│   ├── PostControllerTest.cs
 │   └── PostService.Tests.csproj
+├── .vscode/
+│   └── settings.json         # VS Code settings with test explorer config
 ├── Microservices.sln         # Master solution file
 ├── DATABASE_SETUP.md         # Database setup instructions
 └── README.md                 # This file
@@ -145,12 +167,14 @@ dotnet run
 # Service runs on http://localhost:5000
 ```
 
-### Running Tests
 
-```bash
-cd PostService.Tests
-dotnet test
 ```
+
+#### Test Coverage
+
+- **AuthControllerTests:** 10+ test cases covering Register, Login, and RefreshToken functionality
+- **UserControllerTest:** 8 test cases covering GetSingleUser, GetUsers, AddUser, EditUser, DeleteUser
+- **PostControllerTest:** Comprehensive tests for all Post operations
 
 For detailed test coverage:
 ```bash
@@ -166,6 +190,29 @@ Each service provides Swagger/OpenAPI documentation:
 - **PostService:** https://localhost:7000/swagger/index.html
 
 ## Architecture Patterns
+
+### Dependency Injection & Data Access
+- **IDataContextDapper Interface:** Abstraction for all data access operations
+- **DataContextDapper Implementation:** Concrete implementation using Dapper ORM
+- **Constructor Injection:** All controllers receive dependencies via constructor
+- **Benefits:** Loose coupling, testability, and flexibility
+
+### Example Usage
+```csharp
+// Controller constructor with DI
+public class UserController : ControllerBase
+{
+    private readonly IDataContextDapper _dapper;
+    
+    public UserController(IDataContextDapper dapper)
+    {
+        _dapper = dapper;
+    }
+}
+
+// Registered in Program.cs
+builder.Services.AddScoped<IDataContextDapper, DataContextDapper>();
+```
 
 ### Microservices Separation
 - Each service has its own database
@@ -255,14 +302,30 @@ kill -9 <PID>
 - **CORS:** Configure as needed for frontend integration
 - **HTTPS:** Enforce in production environment
 
-## Technology Stack
+## Recent Updates (February 2026)
 
-- **Framework:** .NET 10 (C#)
-- **Database:** PostgreSQL
-- **ORM:** Dapper
-- **Authentication:** JWT (System.IdentityModel.Tokens.Jwt)
-- **Testing:** xUnit, Moq
-- **API Documentation:** Swagger/OpenAPI
+### Test Infrastructure
+- ✅ Created comprehensive test suites for all three services
+- ✅ Implemented AuthService.Tests with 10+ test methods
+- ✅ Implemented UserService.Tests with 8 test methods
+- ✅ Enhanced PostService.Tests with additional test cases
+
+### Dependency Injection
+- ✅ Created `IDataContextDapper` interface for all services
+- ✅ Updated all controllers to use constructor-based DI
+- ✅ Registered DI services in Program.cs for each service
+- ✅ Made `DataContextDapper` implement the interface pattern
+
+### Configuration & Tooling
+- ✅ Fixed .gitignore to properly exclude build artifacts (bin/, obj/, coverage-report/, TestResults/)
+- ✅ Configured VS Code test explorer settings for test project discovery
+- ✅ Made `UserForLoginConfirmationDto` constructor public for testing
+
+### Code Quality
+- ✅ All tests passing (AuthService.Tests, UserService.Tests, PostService.Tests)
+- ✅ Removed commented code from test files
+- ✅ Proper mock setup and assertion patterns using Moq and FluentAssertions
+- ✅ Full controller action coverage in tests
 
 ## Future Enhancements
 
@@ -274,23 +337,3 @@ kill -9 <PID>
 - [ ] Centralized logging (ELK stack)
 - [ ] Rate limiting and throttling
 - [ ] caching layer (Redis)
-
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Write/update tests
-4. Ensure all tests pass
-5. Submit pull request
-
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For issues or questions:
-1. Check the service-specific README
-2. Review DATABASE_SETUP.md for database issues
-3. Check Swagger documentation for API details
-4. Review test files for usage examples
