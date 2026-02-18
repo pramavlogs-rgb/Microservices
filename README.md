@@ -1,6 +1,6 @@
 # Microservices Architecture
 
-This repository contains a collection of microservices built with .NET 10 and PostgreSQL.
+This repository contains a collection of microservices built with .NET 10 and PostgreSQL, including **AuthService**, **UserService**, and **PostService** for managing authentication, user profiles, and posts respectively.
 
 ## Technology Stack
 
@@ -10,6 +10,14 @@ This repository contains a collection of microservices built with .NET 10 and Po
 - **Authentication:** JWT (System.IdentityModel.Tokens.Jwt)
 - **Testing:** xUnit, Moq, FluentAssertions
 - **API Documentation:** Swagger/OpenAPI
+
+## API Documentation
+
+Each service provides Swagger/OpenAPI documentation:
+
+- **AuthService:** http://localhost:5003/swagger/index.html
+- **UserService:** http://localhost:5010/swagger/index.html
+- **PostService:** http://localhost:5000/swagger/index.html
 
 ## Microservices Overview
 
@@ -180,14 +188,6 @@ For detailed test coverage:
 ```bash
 dotnet test /p:CollectCoverage=true
 ```
-
-## API Documentation
-
-Each service provides Swagger/OpenAPI documentation:
-
-- **AuthService:** https://localhost:7003/swagger/index.html
-- **UserService:** https://localhost:7001/swagger/index.html
-- **PostService:** https://localhost:7000/swagger/index.html
 
 ## Architecture Patterns
 
