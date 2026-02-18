@@ -47,6 +47,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             };
         });
 
+builder.Services.AddScoped<IDataContextDapper, DataContextDapper>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

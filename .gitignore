@@ -1,3 +1,5 @@
 # Build results
 bin/
 obj/
+coverage-report/
+TestResults/

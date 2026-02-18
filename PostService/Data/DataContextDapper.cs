@@ -5,7 +5,7 @@ using Npgsql;
 
 namespace PostService.Data
 {
-    class DataContextDapper
+    public class DataContextDapper : IDataContextDapper
     {
         private readonly IConfiguration _config;
         public DataContextDapper(IConfiguration config)

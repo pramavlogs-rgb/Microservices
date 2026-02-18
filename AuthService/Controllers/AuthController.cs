@@ -17,12 +17,12 @@ namespace AuthService.Controllers
     [Route("[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly DataContextDapper _dapper;
+        private readonly IDataContextDapper _dapper;
         private readonly IConfiguration _config;
 
-        public AuthController(IConfiguration config)
+        public AuthController(IDataContextDapper dapper, IConfiguration config)
         {
-            _dapper = new DataContextDapper(config);
+            _dapper = dapper;
             _config = config;
         }
 

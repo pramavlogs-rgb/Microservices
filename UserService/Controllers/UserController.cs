@@ -12,10 +12,10 @@ namespace UserService.Controllers;
 [Route("[controller]")]
 public class UserController : ControllerBase
 {
-    DataContextDapper _dapper;
-    public UserController(IConfiguration config)
+    IDataContextDapper _dapper;
+    public UserController(IDataContextDapper dapper)
     {
-        _dapper = new DataContextDapper(config);
+        _dapper = dapper;
     }
 
      [HttpGet("GetUsers")]

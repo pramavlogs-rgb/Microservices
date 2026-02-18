@@ -4,7 +4,7 @@ using Npgsql;
 
 namespace AuthService.Data
 {
-    class DataContextDapper
+    public class DataContextDapper : IDataContextDapper
     {
         private readonly IConfiguration _config;
         public DataContextDapper(IConfiguration config)

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Npgsql;
 using NpgsqlTypes;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace PostService.Controllers;
 [Authorize]
@@ -13,12 +14,12 @@ namespace PostService.Controllers;
 [Route("[controller]")]
 public class PostController : ControllerBase
 {
-    DataContextDapper _dapper;
+    IDataContextDapper _dapper;
     IHttpClientFactory _httpClientFactory;
     
-    public PostController(IConfiguration config, IHttpClientFactory httpClientFactory)
+    public PostController(IDataContextDapper dapper, IHttpClientFactory httpClientFactory)
     {
-        _dapper = new DataContextDapper(config);
+        _dapper = dapper;
         _httpClientFactory = httpClientFactory;
     }
 
