@@ -199,7 +199,6 @@ Each service provides Swagger/OpenAPI documentation:
 
 ### Example Usage
 ```csharp
-// Controller constructor with DI
 public class UserController : ControllerBase
 {
     private readonly IDataContextDapper _dapper;
