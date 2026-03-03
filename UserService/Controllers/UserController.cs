@@ -5,6 +5,7 @@ using UserService.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Npgsql;
 using NpgsqlTypes;
+using Microsoft.Extensions.Logging;
 
 namespace UserService.Controllers;
 [Authorize]
@@ -13,32 +14,56 @@ namespace UserService.Controllers;
 public class UserController : ControllerBase
 {
     IDataContextDapper _dapper;
-    public UserController(IDataContextDapper dapper)
+    ILogger<UserController> _logger;
+    
+    public UserController(IDataContextDapper dapper, ILogger<UserController> logger)
     {
         _dapper = dapper;
+        _logger = logger;
     }
 
      [HttpGet("GetUsers")]
     // public IEnumerable<User> GetUsers()
     public IEnumerable<User> GetUsers()
     {
-        string sql ="SELECT * FROM public.\"Users\"";
-        IEnumerable<User> users = _dapper.LoadData<User>(sql);
-        return users;
+        _logger.LogInformation("GetUsers endpoint called");
+        try
+        {
+            string sql ="SELECT * FROM public.\"Users\"";
+            IEnumerable<User> users = _dapper.LoadData<User>(sql);
+            _logger.LogDebug("Retrieved {UserCount} users from database", users.Count());
+            return users;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving users from database");
+            throw;
+        }
     }
 
         [HttpGet("GetSingleUser/{userId}")]
     // public IEnumerable<User> GetUsers()
     public User GetSingleUser(int userId)
     {
-         string sql ="SELECT * FROM public.\"Users\" WHERE \"UserId\"= " + userId.ToString();
-        User user = _dapper.LoadDataSingle<User>(sql);
-        return user;
+        _logger.LogInformation("GetSingleUser endpoint called for userId: {UserId}", userId);
+        try
+        {
+             string sql ="SELECT * FROM public.\"Users\" WHERE \"UserId\"= " + userId.ToString();
+            User user = _dapper.LoadDataSingle<User>(sql);
+            _logger.LogDebug("Retrieved user data for userId: {UserId}", userId);
+            return user;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving user {UserId} from database", userId);
+            throw;
+        }
     }
 
     [HttpPut("EditUser")]
     public IActionResult EditUser(User user)
     {
+        _logger.LogInformation("EditUser endpoint called for userId: {UserId}, email: {Email}", user.UserId, user.Email);
         string sql = @"UPDATE public.""Users"" SET ""FirstName"" = @FirstName, ""LastName"" = @LastName, ""Email"" = @Email, ""Gender"" = @Gender, ""Active"" = @Active WHERE ""UserId"" = @UserId";
         
         var parameters = new List<NpgsqlParameter>
@@ -53,9 +78,11 @@ public class UserController : ControllerBase
         
         if (_dapper.ExecuteSqlWithParameters(sql, parameters))
         {
+            _logger.LogInformation("User updated successfully for userId: {UserId}", user.UserId);
             return Ok();
         } 
 
+        _logger.LogError("Failed to update user for userId: {UserId}", user.UserId);
         throw new Exception("Failed to Update User");
     }
 
@@ -63,6 +90,7 @@ public class UserController : ControllerBase
     [HttpPost("AddUser")]
     public IActionResult AddUser(UserToAddDto user)
     {
+        _logger.LogInformation("AddUser endpoint called for email: {Email}", user.Email);
         string sql = @"
             INSERT INTO public.""Users""(
                 ""FirstName"",
@@ -89,15 +117,18 @@ public class UserController : ControllerBase
 
         if (_dapper.ExecuteSqlWithParameters(sql, parameters))
         {
+            _logger.LogInformation("New user created successfully with email: {Email}", user.Email);
             return Ok();
         } 
 
+        _logger.LogError("Failed to add new user with email: {Email}", user.Email);
         throw new Exception("Failed to Add User");
     }
 
     [HttpDelete("DeleteUser/{userId}")]
     public IActionResult DeleteUser(int userId)
     {
+        _logger.LogInformation("DeleteUser endpoint called for userId: {UserId}", userId);
         string sql = @"
             DELETE FROM public.""Users"" 
                 WHERE ""UserId"" = @UserId";
@@ -109,9 +140,11 @@ public class UserController : ControllerBase
 
         if (_dapper.ExecuteSqlWithParameters(sql, parameters))
         {
+            _logger.LogInformation("User deleted successfully for userId: {UserId}", userId);
             return Ok();
         } 
 
+        _logger.LogError("Failed to delete user for userId: {UserId}", userId);
         throw new Exception("Failed to Delete User");
     }
 }

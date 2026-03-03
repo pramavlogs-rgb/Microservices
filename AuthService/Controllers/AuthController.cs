@@ -10,6 +10,7 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
 
 namespace AuthService.Controllers
 {   
@@ -19,16 +20,20 @@ namespace AuthService.Controllers
     {
         private readonly IDataContextDapper _dapper;
         private readonly IConfiguration _config;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IDataContextDapper dapper, IConfiguration config)
+        public AuthController(IDataContextDapper dapper, IConfiguration config, ILogger<AuthController> logger)
         {
             _dapper = dapper;
             _config = config;
+            _logger = logger;
         }
 
         [HttpPost("Register")]
         public IActionResult Register(UserForRegistrationDto userForRegistration)
         {
+            _logger.LogInformation("Register endpoint called for email: {Email}", userForRegistration.Email);
+            
             if (userForRegistration.Password == userForRegistration.PasswordConfirm)
             {
                 string sqlCheckUserExists = "SELECT \"Email\" FROM public.\"Auth\" WHERE \"Email\" = @Email";
@@ -41,6 +46,7 @@ namespace AuthService.Controllers
                 IEnumerable<string> existingUsers = _dapper.LoadData<string>(sqlCheckUserExists, checkUserParams);
                 if (existingUsers.Count() == 0)
                 {
+                    _logger.LogDebug("Email {Email} is available for registration", userForRegistration.Email);
                     byte[] passwordSalt = new byte[128 / 8];
                     using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
                     {
@@ -61,6 +67,7 @@ namespace AuthService.Controllers
 
                     if (_dapper.ExecuteSqlWithParameters(sqlAddAuth, sqlParameters))
                     {
+                        _logger.LogDebug("Auth record created successfully for email: {Email}", userForRegistration.Email);
                         
                         string sqlAddUser = @"
     INSERT INTO public.""Users"" (""FirstName"", ""LastName"", ""Email"", ""Gender"", ""Active"")
@@ -76,20 +83,26 @@ namespace AuthService.Controllers
 
                         if (_dapper.ExecuteSqlWithParameters(sqlAddUser, userParameters))
                         {
+                            _logger.LogInformation("User registration successful for email: {Email}", userForRegistration.Email);
                             return Ok();
                         }
+                        _logger.LogError("Failed to add user record during registration for email: {Email}", userForRegistration.Email);
                         throw new Exception("Failed to add user.");
                     }
+                    _logger.LogError("Failed to create auth record during registration for email: {Email}", userForRegistration.Email);
                     throw new Exception("Failed to register user.");
                 }
+                _logger.LogWarning("Registration attempt with existing email: {Email}", userForRegistration.Email);
                 throw new Exception("User with this email already exists!");
             }
+            _logger.LogWarning("Registration attempt with mismatched passwords for email: {Email}", userForRegistration.Email);
             throw new Exception("Passwords do not match!");
         }
 
         [HttpPost("Login")]
         public IActionResult Login(UserForLoginDto userForLogin)
         {
+            _logger.LogInformation("Login endpoint called for email: {Email}", userForLogin.Email);
             string sqlForHashAndSalt = @"select ""PasswordHash"",""PasswordSalt"" from public.""Auth"" where ""Email""='" +
                 userForLogin.Email + "'";
 
@@ -101,6 +114,7 @@ namespace AuthService.Controllers
             for (int index = 0; index < passwordHash.Length; index++)
             {
                 if (passwordHash[index] != userForConfirmation.PasswordHash[index]){
+                    _logger.LogWarning("Login attempt with incorrect password for email: {Email}", userForLogin.Email);
                     return StatusCode(401, "Incorrect password!");
                 }
             }
@@ -109,15 +123,19 @@ namespace AuthService.Controllers
                 userForLogin.Email + "'";
 
             int userId = _dapper.LoadDataSingle<int>(userIdSql);
-
+            
+            string token = CreateToken(userId);
+            _logger.LogInformation("Login successful for email: {Email}, userId: {UserId}", userForLogin.Email, userId);
+            
             return Ok(new Dictionary<string, string> {
-                {"token", CreateToken(userId)}
+                {"token", token}
             });
         }
         
         [HttpGet("RefreshToken")]
         public string RefreshToken()
         {
+            _logger.LogInformation("RefreshToken endpoint called");
             string userIdSql = @"SELECT ""UserId"" FROM public.""Users"" WHERE ""UserId"" = @UserId";
             
             List<NpgsqlParameter> refreshParams = new()
@@ -126,8 +144,10 @@ namespace AuthService.Controllers
             };
 
             int userId = _dapper.LoadDataSingle<int>(userIdSql, refreshParams);
-
-            return CreateToken(userId);
+            string newToken = CreateToken(userId);
+            
+            _logger.LogInformation("Token refreshed successfully for userId: {UserId}", userId);
+            return newToken;
         }
 
         private byte[] GetPasswordHash(string password, byte[] passwordSalt)
