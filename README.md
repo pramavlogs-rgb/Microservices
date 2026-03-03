@@ -10,13 +10,9 @@ graph TB
 
     subgraph Services["Microservices Layer"]
         direction LR
-        AuthService["🔐 AuthService\nPort: 5003\n─────────────\nPOST /auth/register\nPOST /auth/login\nGET  /auth/refreshtoken"]
-        UserService["👤 UserService\nPort: 5001\n─────────────\nGET  /user/getusers\nGET  /user/getsingleuser\nPOST /user/adduser\nPUT  /user/edituser\nDELETE /user/deleteuser"]
-        PostService["📝 PostService\nPort: 5000\n─────────────\nGET  /post/getposts\nGET  /post/getsinglepost\nPOST /post/post\nPUT  /post/post\nDELETE /post/post"]
-    end
-
-    subgraph Auth["Authentication"]
-        JWT["🔑 JWT Token\n(HS512, 24h expiry)"]
+        AuthService["AuthService | Port: 5003\n─────────────\nPOST /auth/register\nPOST /auth/login\nGET  /auth/refreshtoken"]
+        UserService["UserService | Port: 5001\n─────────────\nGET  /user/getusers\nGET  /user/getsingleuser\nPOST /user/adduser\nPUT  /user/edituser\nDELETE /user/deleteuser"]
+        PostService["PostService | Port: 5000\n─────────────\nGET  /post/getposts\nGET  /post/getsinglepost\nPOST /post/post\nPUT  /post/post\nDELETE /post/post\nGET  /post/getpostswithuserinfo"]
     end
 
     subgraph DBLayer["Database Layer (PostgreSQL)"]
@@ -26,12 +22,10 @@ graph TB
     end
 
     Client -->|"HTTP Request"| AuthService
-    Client -->|"HTTP + Bearer JWT"| UserService
-    Client -->|"HTTP + Bearer JWT"| PostService
+    Client -->|"HTTP Request"| UserService
+    Client -->|"HTTP Request"| PostService
 
-    AuthService -->|"Issues"| JWT
-    JWT -->|"Validates"| UserService
-    JWT -->|"Validates"| PostService
+    PostService -->|"GET /user/GetSingleUser/{userId}"| UserService
 
     AuthService -->|"Dapper ORM"| AuthDB
     UserService -->|"Dapper ORM"| UserDB
