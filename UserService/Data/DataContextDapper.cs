@@ -1,7 +1,6 @@
 using System.Data;
 using Dapper;
 using Npgsql;
-// using Microsoft.Data.SqlClient;
 
 namespace UserService.Data
 {
