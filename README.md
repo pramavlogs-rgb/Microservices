@@ -2,6 +2,42 @@
 
 This repository contains a collection of microservices built with .NET 10 and PostgreSQL, including **AuthService**, **UserService**, and **PostService** for managing authentication, user profiles, and posts respectively.
 
+## Architecture 
+
+```mermaid
+graph TB
+    Client(["🖥️ Client\n(Browser / Postman)"])
+
+    subgraph Services["Microservices Layer"]
+        direction LR
+        AuthService["🔐 AuthService\nPort: 5003\n─────────────\nPOST /auth/register\nPOST /auth/login\nGET  /auth/refreshtoken"]
+        UserService["👤 UserService\nPort: 5001\n─────────────\nGET  /user/getusers\nGET  /user/getsingleuser\nPOST /user/adduser\nPUT  /user/edituser\nDELETE /user/deleteuser"]
+        PostService["📝 PostService\nPort: 5000\n─────────────\nGET  /post/getposts\nGET  /post/getsinglepost\nPOST /post/post\nPUT  /post/post\nDELETE /post/post"]
+    end
+
+    subgraph Auth["Authentication"]
+        JWT["🔑 JWT Token\n(HS512, 24h expiry)"]
+    end
+
+    subgraph DBLayer["Database Layer (PostgreSQL)"]
+        AuthDB[("🐘 auth_db\nPort: 5432")]
+        UserDB[("🐘 user_db\nPort: 5432")]
+        PostDB[("🐘 post_db\nPort: 5432")]
+    end
+
+    Client -->|"HTTP Request"| AuthService
+    Client -->|"HTTP + Bearer JWT"| UserService
+    Client -->|"HTTP + Bearer JWT"| PostService
+
+    AuthService -->|"Issues"| JWT
+    JWT -->|"Validates"| UserService
+    JWT -->|"Validates"| PostService
+
+    AuthService -->|"Dapper ORM"| AuthDB
+    UserService -->|"Dapper ORM"| UserDB
+    PostService -->|"Dapper ORM"| PostDB
+```
+
 ## Technology Stack
 
 - **Framework:** .NET 10 (C#)
