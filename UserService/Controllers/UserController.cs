@@ -23,40 +23,53 @@ public class UserController : ControllerBase
     }
 
      [HttpGet("GetUsers")]
-    // public IEnumerable<User> GetUsers()
-    public IEnumerable<User> GetUsers()
+    public ActionResult<IEnumerable<User>> GetUsers()
     {
         _logger.LogInformation("GetUsers endpoint called");
         try
         {
-            string sql ="SELECT * FROM public.\"Users\"";
+            string sql = "SELECT * FROM public.\"Users\"";
             IEnumerable<User> users = _dapper.LoadData<User>(sql);
             _logger.LogDebug("Retrieved {UserCount} users from database", users.Count());
-            return users;
+            return Ok(users);
+        }
+        catch (NpgsqlException ex)
+        {
+            _logger.LogError(ex, "Database error while retrieving users");
+            return StatusCode(503, "Database unavailable. Please try again later.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving users from database");
-            throw;
+            _logger.LogError(ex, "Unexpected error retrieving users from database");
+            return StatusCode(500, "An unexpected error occurred.");
         }
     }
 
-        [HttpGet("GetSingleUser/{userId}")]
-    // public IEnumerable<User> GetUsers()
-    public User GetSingleUser(int userId)
+    [HttpGet("GetSingleUser/{userId}")]
+    public ActionResult<User> GetSingleUser(int userId)
     {
         _logger.LogInformation("GetSingleUser endpoint called for userId: {UserId}", userId);
         try
         {
-             string sql ="SELECT * FROM public.\"Users\" WHERE \"UserId\"= " + userId.ToString();
+            string sql = "SELECT * FROM public.\"Users\" WHERE \"UserId\"= " + userId.ToString();
             User user = _dapper.LoadDataSingle<User>(sql);
+            if (user.UserId == null)
+            {
+                _logger.LogWarning("User not found for userId: {UserId}", userId);
+                return NotFound($"User with ID {userId} not found.");
+            }
             _logger.LogDebug("Retrieved user data for userId: {UserId}", userId);
-            return user;
+            return Ok(user);
+        }
+        catch (NpgsqlException ex)
+        {
+            _logger.LogError(ex, "Database error while retrieving user {UserId}", userId);
+            return StatusCode(503, "Database unavailable. Please try again later.");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving user {UserId} from database", userId);
-            throw;
+            _logger.LogError(ex, "Unexpected error retrieving user {UserId} from database", userId);
+            return StatusCode(500, "An unexpected error occurred.");
         }
     }
 
