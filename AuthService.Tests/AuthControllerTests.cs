@@ -49,7 +49,7 @@ namespace AuthService.Tests
                 .Returns(true);
 
             var config = GetMockConfiguration();
-            var controller = new AuthController(mockDataContext.Object, config);
+            var controller = new AuthController(mockDataContext.Object, config, new Mock<ILogger<AuthController>>().Object);
 
             var result = controller.Register(userForRegistration);
 
@@ -72,7 +72,7 @@ namespace AuthService.Tests
 
             var mockDataContext = new Mock<IDataContextDapper>();
             var config = GetMockConfiguration();
-            var controller = new AuthController(mockDataContext.Object, config);
+            var controller = new AuthController(mockDataContext.Object, config, new Mock<ILogger<AuthController>>().Object);
 
             var action = () => controller.Register(userForRegistration);
 
@@ -97,7 +97,7 @@ namespace AuthService.Tests
                 .Returns(new List<string> { "existing@example.com" });
 
             var config = GetMockConfiguration();
-            var controller = new AuthController(mockDataContext.Object, config);
+            var controller = new AuthController(mockDataContext.Object, config, new Mock<ILogger<AuthController>>().Object);
 
             var action = () => controller.Register(userForRegistration);
 
@@ -124,7 +124,7 @@ namespace AuthService.Tests
                 .Returns(false);
 
             var config = GetMockConfiguration();
-            var controller = new AuthController(mockDataContext.Object, config);
+            var controller = new AuthController(mockDataContext.Object, config, new Mock<ILogger<AuthController>>().Object);
 
             var action = () => controller.Register(userForRegistration);
 
@@ -157,7 +157,7 @@ namespace AuthService.Tests
                 });
 
             var config = GetMockConfiguration();
-            var controller = new AuthController(mockDataContext.Object, config);
+            var controller = new AuthController(mockDataContext.Object, config, new Mock<ILogger<AuthController>>().Object);
 
             var action = () => controller.Register(userForRegistration);
 
@@ -190,7 +190,7 @@ namespace AuthService.Tests
                 .Returns(1);
 
             var config = GetMockConfiguration();
-            var controller = new AuthController(mockDataContext.Object, config);
+            var controller = new AuthController(mockDataContext.Object, config, new Mock<ILogger<AuthController>>().Object);
 
             var claims = new List<Claim> { new Claim("userId", "1") };
             var identity = new ClaimsIdentity(claims);
@@ -217,7 +217,7 @@ namespace AuthService.Tests
                 .Returns(1);
 
             var config = GetMockConfiguration();
-            var controller = new AuthController(mockDataContext.Object, config);
+            var controller = new AuthController(mockDataContext.Object, config, new Mock<ILogger<AuthController>>().Object);
 
             var claims = new List<Claim> { new Claim("userId", "1") };
             var identity = new ClaimsIdentity(claims);

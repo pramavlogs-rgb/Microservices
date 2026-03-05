@@ -35,7 +35,7 @@ namespace PostService.Tests
                 .Returns(post);
 
             var mockHttpClientFactory = new Mock<IHttpClientFactory>();
-            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<Microsoft.Extensions.Logging.ILogger<PostController>>().Object);
+            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<ILogger<PostController>>().Object);
 
             var result = controller.GetSinglePost(1);
             result.Should().NotBeNull();
@@ -84,7 +84,7 @@ namespace PostService.Tests
                 .Returns(posts);
 
             var mockHttpClientFactory = new Mock<IHttpClientFactory>();
-            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<Microsoft.Extensions.Logging.ILogger<PostController>>().Object);
+            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<ILogger<PostController>>().Object);
 
             var result = controller.GetPosts();
             result.Should().NotBeNull();
@@ -105,7 +105,7 @@ namespace PostService.Tests
                 .Returns(new List<Post>());
 
             var mockHttpClientFactory = new Mock<IHttpClientFactory>();
-            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<Microsoft.Extensions.Logging.ILogger<PostController>>().Object);
+            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<ILogger<PostController>>().Object);
 
             var result = controller.GetPosts();
 
@@ -132,7 +132,7 @@ namespace PostService.Tests
                 .Returns(true);
 
             var mockHttpClientFactory = new Mock<IHttpClientFactory>();
-            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<Microsoft.Extensions.Logging.ILogger<PostController>>().Object);
+            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<ILogger<PostController>>().Object);
 
             // Setup user context
             var claims = new List<Claim> { new Claim("userId", "5") };
@@ -166,7 +166,7 @@ namespace PostService.Tests
                 .Returns(false);
 
             var mockHttpClientFactory = new Mock<IHttpClientFactory>();
-            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<Microsoft.Extensions.Logging.ILogger<PostController>>().Object);
+            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<ILogger<PostController>>().Object);
 
             // Setup user context
             var claims = new List<Claim> { new Claim("userId", "5") };
@@ -201,7 +201,7 @@ namespace PostService.Tests
                 .Returns(true);
 
             var mockHttpClientFactory = new Mock<IHttpClientFactory>();
-            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<Microsoft.Extensions.Logging.ILogger<PostController>>().Object);
+            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<ILogger<PostController>>().Object);
 
             // Setup user context
             var claims = new List<Claim> { new Claim("userId", "5") };
@@ -237,7 +237,7 @@ namespace PostService.Tests
                 .Returns(false);
 
             var mockHttpClientFactory = new Mock<IHttpClientFactory>();
-            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<Microsoft.Extensions.Logging.ILogger<PostController>>().Object);
+            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<ILogger<PostController>>().Object);
 
             // Setup user context
             var claims = new List<Claim> { new Claim("userId", "5") };
@@ -266,7 +266,7 @@ namespace PostService.Tests
                 .Returns(true);
 
             var mockHttpClientFactory = new Mock<IHttpClientFactory>();
-            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<Microsoft.Extensions.Logging.ILogger<PostController>>().Object);
+            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<ILogger<PostController>>().Object);
 
             // Setup user context
             var claims = new List<Claim> { new Claim("userId", "5") };
@@ -296,7 +296,7 @@ namespace PostService.Tests
                 .Returns(false);
 
             var mockHttpClientFactory = new Mock<IHttpClientFactory>();
-            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<Microsoft.Extensions.Logging.ILogger<PostController>>().Object);
+            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<ILogger<PostController>>().Object);
 
             // Setup user context
             var claims = new List<Claim> { new Claim("userId", "5") };
@@ -338,7 +338,7 @@ namespace PostService.Tests
 
             var mockHttpClientFactory = new Mock<IHttpClientFactory>();
 
-            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<Microsoft.Extensions.Logging.ILogger<PostController>>().Object);
+            var controller = new PostController(mockDataContext.Object, mockHttpClientFactory.Object, new Mock<ILogger<PostController>>().Object);
 
             // Setup user context
             var claims = new List<Claim> { new Claim("userId", userId.ToString()) };
