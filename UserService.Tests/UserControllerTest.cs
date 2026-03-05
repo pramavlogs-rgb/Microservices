@@ -2,292 +2,266 @@ using Xunit;
 using Moq;
 using UserService.Controllers;
 using UserService.Models;
-using UserService.Data;
 using UserService.Dtos;
+using UserService.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace UserService.Tests
 {
     public class UserControllerTest
     {
+        private readonly Mock<IUserService> _mockUserService;
+        private readonly Mock<ILogger<UserController>> _mockLogger;
+        private readonly UserController _controller;
 
-
-        [Fact]
-        public void GetSingleUser_ReturnsUser_WhenUserExists()
+        public UserControllerTest()
         {
-            var user = new User
-            {
-                UserId = 1,
-                FirstName = "John",
-                LastName = "Doe",
-                Email = "john.doe@example.com",
-                Gender = "Male",
-                Active = true
-            };
-
-            var mockDataContext = new Mock<IDataContextDapper>();
-            mockDataContext.Setup(d => d.LoadDataSingle<User>(It.IsAny<string>()))
-                .Returns(user);
-
-            var controller = new UserController(mockDataContext.Object);
-
-            var result = controller.GetSingleUser(1);
-
-            result.Should().NotBeNull();
-            result.Should().BeOfType<User>();
-            result.UserId.Should().Be(1);
-            result.FirstName.Should().Be("John");
-            result.LastName.Should().Be("Doe");
-            result.Email.Should().Be("john.doe@example.com");
-            result.Gender.Should().Be("Male");
-            result.Active.Should().BeTrue();
-            
-            mockDataContext.Verify(d => d.LoadDataSingle<User>(It.IsAny<string>()), Times.Once);
+            _mockUserService = new Mock<IUserService>();
+            _mockLogger = new Mock<ILogger<UserController>>();
+            _controller = new UserController(_mockLogger.Object, _mockUserService.Object);
         }
 
         [Fact]
-        public void GetUsers_ReturnsAllUsers_WhenUsersExist()
+        public void GetUsers_ReturnsOkWithAllUsers_WhenUsersExist()
         {
             var users = new List<User>
             {
-                new User
-                {
-                    UserId = 1,
-                    FirstName = "John",
-                    LastName = "Doe",
-                    Email = "john.doe@example.com",
-                    Gender = "Male",
-                    Active = true
-                },
-                new User
-                {
-                    UserId = 2,
-                    FirstName = "Jane",
-                    LastName = "Smith",
-                    Email = "jane.smith@example.com",
-                    Gender = "Female",
-                    Active = true
-                }
+                new User { UserId = 1, FirstName = "John", LastName = "Doe", Email = "john@example.com", Gender = "Male", Active = true },
+                new User { UserId = 2, FirstName = "Jane", LastName = "Smith", Email = "jane@example.com", Gender = "Female", Active = true }
             };
+            _mockUserService.Setup(s => s.GetUsers()).Returns(users);
 
-            var mockDataContext = new Mock<IDataContextDapper>();
-            mockDataContext.Setup(d => d.LoadData<User>(It.IsAny<string>()))
-                .Returns(users);
+            var result = _controller.GetUsers();
 
-            var controller = new UserController(mockDataContext.Object);
-
-            var result = controller.GetUsers();
-            result.Should().NotBeNull();
-            result.Should().HaveCount(2);
-            result.First().UserId.Should().Be(1);
-            result.First().FirstName.Should().Be("John");
-            result.Last().UserId.Should().Be(2);
-            result.Last().FirstName.Should().Be("Jane");
-            
-            mockDataContext.Verify(d => d.LoadData<User>(It.IsAny<string>()), Times.Once);
+            var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+            var returnedUsers = okResult.Value.Should().BeAssignableTo<IEnumerable<User>>().Subject;
+            returnedUsers.Should().HaveCount(2);
+            returnedUsers.First().UserId.Should().Be(1);
+            returnedUsers.Last().UserId.Should().Be(2);
+            _mockUserService.Verify(s => s.GetUsers(), Times.Once);
         }
 
         [Fact]
-        public void GetUsers_ReturnsEmptyList_WhenNoUsers()
+        public void GetUsers_ReturnsOkWithEmptyList_WhenNoUsersExist()
         {
-            var mockDataContext = new Mock<IDataContextDapper>();
-            mockDataContext.Setup(d => d.LoadData<User>(It.IsAny<string>()))
-                .Returns(new List<User>());
+            _mockUserService.Setup(s => s.GetUsers()).Returns(new List<User>());
 
-            var controller = new UserController(mockDataContext.Object);
+            var result = _controller.GetUsers();
 
-            var result = controller.GetUsers();
+            var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+            var returnedUsers = okResult.Value.Should().BeAssignableTo<IEnumerable<User>>().Subject;
+            returnedUsers.Should().BeEmpty();
+        }
 
-            result.Should().NotBeNull();
-            result.Should().BeEmpty();
-            mockDataContext.Verify(d => d.LoadData<User>(It.IsAny<string>()), Times.Once);
+        [Fact]
+        public void GetUsers_Returns503_WhenDatabaseUnavailable()
+        {
+            _mockUserService.Setup(s => s.GetUsers()).Throws<Npgsql.NpgsqlException>();
+
+            var result = _controller.GetUsers();
+
+            var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(503);
+        }
+
+        [Fact]
+        public void GetUsers_Returns500_WhenUnexpectedErrorOccurs()
+        {
+            _mockUserService.Setup(s => s.GetUsers()).Throws<Exception>();
+
+            var result = _controller.GetUsers();
+
+            var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(500);
+        }
+
+        [Fact]
+        public void GetSingleUser_ReturnsOkWithUser_WhenUserExists()
+        {
+            var user = new User { UserId = 1, FirstName = "John", LastName = "Doe", Email = "john@example.com", Gender = "Male", Active = true };
+            _mockUserService.Setup(s => s.GetSingleUser(1)).Returns(user);
+
+            var result = _controller.GetSingleUser(1);
+
+            var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+            var returnedUser = okResult.Value.Should().BeOfType<User>().Subject;
+            returnedUser.UserId.Should().Be(1);
+            returnedUser.FirstName.Should().Be("John");
+            _mockUserService.Verify(s => s.GetSingleUser(1), Times.Once);
+        }
+
+        [Fact]
+        public void GetSingleUser_ReturnsNotFound_WhenUserDoesNotExist()
+        {
+            _mockUserService.Setup(s => s.GetSingleUser(99)).Returns((User?)null);
+
+            var result = _controller.GetSingleUser(99);
+
+            result.Result.Should().BeOfType<NotFoundObjectResult>();
+        }
+
+        [Fact]
+        public void GetSingleUser_Returns503_WhenDatabaseUnavailable()
+        {
+            _mockUserService.Setup(s => s.GetSingleUser(It.IsAny<int>())).Throws<Npgsql.NpgsqlException>();
+
+            var result = _controller.GetSingleUser(1);
+
+            var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(503);
+        }
+
+        [Fact]
+        public void GetSingleUser_Returns500_WhenUnexpectedErrorOccurs()
+        {
+            _mockUserService.Setup(s => s.GetSingleUser(It.IsAny<int>())).Throws<Exception>();
+
+            var result = _controller.GetSingleUser(1);
+
+            var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(500);
         }
 
         [Fact]
         public void AddUser_ReturnsOk_WhenUserAddedSuccessfully()
         {
-            var userToAdd = new UserToAddDto
-            {
-                FirstName = "John",
-                LastName = "Doe",
-                Email = "john.doe@example.com",
-                Gender = "Male",
-                Active = true
-            };
+            var userToAdd = new UserToAddDto { FirstName = "John", LastName = "Doe", Email = "john@example.com", Gender = "Male", Active = true };
+            _mockUserService.Setup(s => s.AddUser(userToAdd)).Returns(true);
 
-            var mockDataContext = new Mock<IDataContextDapper>();
-            mockDataContext.Setup(d => d.ExecuteSqlWithParameters(It.IsAny<string>(), It.IsAny<List<Npgsql.NpgsqlParameter>>()))
-                .Returns(true);
+            var result = _controller.AddUser(userToAdd);
 
-            var controller = new UserController(mockDataContext.Object);
-
-            var claims = new List<Claim> { new Claim("userId", "1") };
-            var identity = new ClaimsIdentity(claims);
-            var principal = new ClaimsPrincipal(identity);
-            controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext { User = principal }
-            };
-
-            var result = controller.AddUser(userToAdd);
-            result.Should().NotBeNull();
             result.Should().BeOfType<OkResult>();
-            
-            mockDataContext.Verify(
-                d => d.ExecuteSqlWithParameters(It.IsAny<string>(), It.IsAny<List<Npgsql.NpgsqlParameter>>()),
-                Times.Once);
+            _mockUserService.Verify(s => s.AddUser(userToAdd), Times.Once);
         }
 
         [Fact]
-        public void AddUser_ThrowsException_WhenUserAdditionFails()
+        public void AddUser_Returns500_WhenUserAdditionFails()
         {
-            var userToAdd = new UserToAddDto
-            {
-                FirstName = "John",
-                LastName = "Doe",
-                Email = "john.doe@example.com",
-                Gender = "Male",
-                Active = true
-            };
+            var userToAdd = new UserToAddDto { FirstName = "John", LastName = "Doe", Email = "john@example.com", Gender = "Male", Active = true };
+            _mockUserService.Setup(s => s.AddUser(userToAdd)).Returns(false);
 
-            var mockDataContext = new Mock<IDataContextDapper>();
-            mockDataContext.Setup(d => d.ExecuteSqlWithParameters(It.IsAny<string>(), It.IsAny<List<Npgsql.NpgsqlParameter>>()))
-                .Returns(false);
+            var result = _controller.AddUser(userToAdd);
 
-            var controller = new UserController(mockDataContext.Object);
+            var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(500);
+        }
 
-            var claims = new List<Claim> { new Claim("userId", "1") };
-            var identity = new ClaimsIdentity(claims);
-            var principal = new ClaimsPrincipal(identity);
-            controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext { User = principal }
-            };
+        [Fact]
+        public void AddUser_Returns503_WhenDatabaseUnavailable()
+        {
+            var userToAdd = new UserToAddDto { FirstName = "John", LastName = "Doe", Email = "john@example.com", Gender = "Male", Active = true };
+            _mockUserService.Setup(s => s.AddUser(It.IsAny<UserToAddDto>())).Throws<Npgsql.NpgsqlException>();
 
-            var action = () => controller.AddUser(userToAdd);
-            action.Should().Throw<Exception>().WithMessage("Failed to Add User");
+            var result = _controller.AddUser(userToAdd);
+
+            var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(503);
+        }
+
+        [Fact]
+        public void AddUser_Returns500_WhenUnexpectedErrorOccurs()
+        {
+            var userToAdd = new UserToAddDto { FirstName = "John", LastName = "Doe", Email = "john@example.com", Gender = "Male", Active = true };
+            _mockUserService.Setup(s => s.AddUser(It.IsAny<UserToAddDto>())).Throws<Exception>();
+
+            var result = _controller.AddUser(userToAdd);
+
+            var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(500);
         }
 
         [Fact]
         public void EditUser_ReturnsOk_WhenUserEditedSuccessfully()
         {
-            var userToEdit = new User
-            {
-                UserId = 1,
-                FirstName = "John",
-                LastName = "Doe",
-                Email = "john.doe@example.com",
-                Gender = "Male",
-                Active = true
-            };
+            var user = new User { UserId = 1, FirstName = "John", LastName = "Doe", Email = "john@example.com", Gender = "Male", Active = true };
+            _mockUserService.Setup(s => s.EditUser(user)).Returns(true);
 
-            var mockDataContext = new Mock<IDataContextDapper>();
-            mockDataContext.Setup(d => d.ExecuteSqlWithParameters(It.IsAny<string>(), It.IsAny<List<Npgsql.NpgsqlParameter>>()))
-                .Returns(true);
+            var result = _controller.EditUser(user);
 
-            var controller = new UserController(mockDataContext.Object);
-
-            var claims = new List<Claim> { new Claim("userId", "1") };
-            var identity = new ClaimsIdentity(claims);
-            var principal = new ClaimsPrincipal(identity);
-            controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext { User = principal }
-            };
-
-            var result = controller.EditUser(userToEdit);
-            result.Should().NotBeNull();
             result.Should().BeOfType<OkResult>();
-            
-            mockDataContext.Verify(
-                d => d.ExecuteSqlWithParameters(It.IsAny<string>(), It.IsAny<List<Npgsql.NpgsqlParameter>>()),
-                Times.Once);
+            _mockUserService.Verify(s => s.EditUser(user), Times.Once);
         }
 
         [Fact]
-        public void EditUser_ThrowsException_WhenUserEditFails()
+        public void EditUser_Returns500_WhenUserEditFails()
         {
-            var userToEdit = new User
-            {
-                UserId = 1,
-                FirstName = "John",
-                LastName = "Doe",
-                Email = "john.doe@example.com",
-                Gender = "Male",
-                Active = true
-            };
+            var user = new User { UserId = 1, FirstName = "John", LastName = "Doe", Email = "john@example.com", Gender = "Male", Active = true };
+            _mockUserService.Setup(s => s.EditUser(user)).Returns(false);
 
-            var mockDataContext = new Mock<IDataContextDapper>();
-            mockDataContext.Setup(d => d.ExecuteSqlWithParameters(It.IsAny<string>(), It.IsAny<List<Npgsql.NpgsqlParameter>>()))
-                .Returns(false);
+            var result = _controller.EditUser(user);
 
-            var controller = new UserController(mockDataContext.Object);
+            var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(500);
+        }
 
-            var claims = new List<Claim> { new Claim("userId", "1") };
-            var identity = new ClaimsIdentity(claims);
-            var principal = new ClaimsPrincipal(identity);
-            controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext { User = principal }
-            };
+        [Fact]
+        public void EditUser_Returns503_WhenDatabaseUnavailable()
+        {
+            var user = new User { UserId = 1, FirstName = "John", LastName = "Doe", Email = "john@example.com", Gender = "Male", Active = true };
+            _mockUserService.Setup(s => s.EditUser(It.IsAny<User>())).Throws<Npgsql.NpgsqlException>();
 
-            var action = () => controller.EditUser(userToEdit);
-            action.Should().Throw<Exception>().WithMessage("Failed to Update User");
+            var result = _controller.EditUser(user);
+
+            var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(503);
+        }
+
+        [Fact]
+        public void EditUser_Returns500_WhenUnexpectedErrorOccurs()
+        {
+            var user = new User { UserId = 1, FirstName = "John", LastName = "Doe", Email = "john@example.com", Gender = "Male", Active = true };
+            _mockUserService.Setup(s => s.EditUser(It.IsAny<User>())).Throws<Exception>();
+
+            var result = _controller.EditUser(user);
+
+            var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(500);
         }
 
         [Fact]
         public void DeleteUser_ReturnsOk_WhenUserDeletedSuccessfully()
         {
-            int userIdToDelete = 1;
+            _mockUserService.Setup(s => s.DeleteUser(1)).Returns(true);
 
-            var mockDataContext = new Mock<IDataContextDapper>();
-            mockDataContext.Setup(d => d.ExecuteSqlWithParameters(It.IsAny<string>(), It.IsAny<List<Npgsql.NpgsqlParameter>>()))
-                .Returns(true);
+            var result = _controller.DeleteUser(1);
 
-            var controller = new UserController(mockDataContext.Object);
-
-            var claims = new List<Claim> { new Claim("userId", "1") };
-            var identity = new ClaimsIdentity(claims);
-            var principal = new ClaimsPrincipal(identity);
-            controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext { User = principal }
-            };
-
-            var result = controller.DeleteUser(userIdToDelete);
-            result.Should().NotBeNull();
             result.Should().BeOfType<OkResult>();
-            
-            mockDataContext.Verify(
-                d => d.ExecuteSqlWithParameters(It.IsAny<string>(), It.IsAny<List<Npgsql.NpgsqlParameter>>()),
-                Times.Once);
+            _mockUserService.Verify(s => s.DeleteUser(1), Times.Once);
         }
 
         [Fact]
-        public void DeleteUser_ThrowsException_WhenUserDeletionFails()
+        public void DeleteUser_Returns500_WhenUserDeletionFails()
         {
-            int userIdToDelete = 1;
+            _mockUserService.Setup(s => s.DeleteUser(1)).Returns(false);
 
-            var mockDataContext = new Mock<IDataContextDapper>();
-            mockDataContext.Setup(d => d.ExecuteSqlWithParameters(It.IsAny<string>(), It.IsAny<List<Npgsql.NpgsqlParameter>>()))
-                .Returns(false);
+            var result = _controller.DeleteUser(1);
 
-            var controller = new UserController(mockDataContext.Object);
-
-            var claims = new List<Claim> { new Claim("userId", "1") };
-            var identity = new ClaimsIdentity(claims);
-            var principal = new ClaimsPrincipal(identity);
-            controller.ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext { User = principal }
-            };
-
-            var action = () => controller.DeleteUser(userIdToDelete);
-            action.Should().Throw<Exception>().WithMessage("Failed to Delete User");
+            var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(500);
         }
 
+        [Fact]
+        public void DeleteUser_Returns503_WhenDatabaseUnavailable()
+        {
+            _mockUserService.Setup(s => s.DeleteUser(It.IsAny<int>())).Throws<Npgsql.NpgsqlException>();
+
+            var result = _controller.DeleteUser(1);
+
+            var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(503);
+        }
+
+        [Fact]
+        public void DeleteUser_Returns500_WhenUnexpectedErrorOccurs()
+        {
+            _mockUserService.Setup(s => s.DeleteUser(It.IsAny<int>())).Throws<Exception>();
+
+            var result = _controller.DeleteUser(1);
+
+            var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+            statusResult.StatusCode.Should().Be(500);
+        }
     }
 }

@@ -56,37 +56,19 @@ namespace UserService.Data
         }
 public T LoadDataSingle<T>(string sql, List<NpgsqlParameter> parameters)
         {
-            using (NpgsqlConnection dbConnection = new NpgsqlConnection(_config.GetConnectionString("DefaultConnection")))
-            {
-                using (NpgsqlCommand command = new NpgsqlCommand(sql, dbConnection))
-                {
-                    command.Parameters.AddRange(parameters.ToArray());
-                    dbConnection.Open();
-                    using (NpgsqlDataReader reader = command.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            return reader.Parse<T>().FirstOrDefault();
-                        }
-                        return default(T);
-                    }
-                }
-            }
+            IDbConnection dbConnection = new NpgsqlConnection(_config.GetConnectionString("DefaultConnection"));
+            var dynamicParams = new DynamicParameters();
+            foreach (var p in parameters)
+                dynamicParams.Add(p.ParameterName, p.Value);
+            return dbConnection.QuerySingleOrDefault<T>(sql, dynamicParams);
         }
 public IEnumerable<T> LoadData<T>(string sql, List<NpgsqlParameter> parameters)
         {
-            using (NpgsqlConnection dbConnection = new NpgsqlConnection(_config.GetConnectionString("DefaultConnection")))
-            {
-                using (NpgsqlCommand command = new NpgsqlCommand(sql, dbConnection))
-                {
-                    command.Parameters.AddRange(parameters.ToArray());
-                    dbConnection.Open();
-                    using (NpgsqlDataReader reader = command.ExecuteReader())
-                    {
-                        return reader.Parse<T>().ToList();
-                    }
-                }
-            }
+            IDbConnection dbConnection = new NpgsqlConnection(_config.GetConnectionString("DefaultConnection"));
+            var dynamicParams = new DynamicParameters();
+            foreach (var p in parameters)
+                dynamicParams.Add(p.ParameterName, p.Value);
+            return dbConnection.Query<T>(sql, dynamicParams);
         }
 
     }

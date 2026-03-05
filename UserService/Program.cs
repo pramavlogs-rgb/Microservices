@@ -1,5 +1,7 @@
 using System.Text;
 using UserService.Data;
+using UserService.Services;
+using UserService.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 // using Microsoft.OpenApi.Models;
@@ -54,6 +56,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         });
 
 builder.Services.AddScoped<IDataContextDapper, DataContextDapper>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserDataService>();
 
 var app = builder.Build();
 
