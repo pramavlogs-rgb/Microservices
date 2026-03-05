@@ -60,13 +60,13 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserDataService>();
 
 var app = builder.Build();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseCors("DevCors");
-    app.UseSwagger();
-    app.UseSwaggerUI();
 }
 else
 {
