@@ -60,15 +60,18 @@ jobs:
       with:
         app-name: TestMicroservices-UserService
         package: ./output/UserService
+        resource-group: TestMicroservices-UserService_group
 
     - name: Deploy PostService Web App
       uses: azure/webapps-deploy@v3
       with:
         app-name: TestMicroservices-PostService
         package: ./output/PostService
+        resource-group: TestMicroservices-PostService_group
 
     - name: Deploy AuthService Web App
       uses: azure/webapps-deploy@v3
       with:
         app-name: TestMicroservices-AuthService
         package: ./output/AuthService
+        resource-group: TestMicroservices-AuthService_group
