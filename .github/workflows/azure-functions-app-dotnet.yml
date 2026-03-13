@@ -46,12 +46,12 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: 'Resolve Project Dependencies Using Dotnet'
-      shell: pwsh # For Linux, use bash
+    - name: Publish services (separate folders)
+      shell: pwsh
       run: |
-        pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-        dotnet publish --configuration Release --output ./output
-        popd
+        dotnet publish ./UserService/UserService.csproj -c Release -o ./output/UserService
+        dotnet publish ./AuthService/AuthService.csproj -c Release -o ./output/AuthService
+        dotnet publish ./PostService/PostService.csproj -c Release -o ./output/PostService
 
     - name: 'Run Azure Functions Action'
       uses: Azure/functions-action@v1
